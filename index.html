@@ -237,7 +237,10 @@
 
     <div id="loading-screen" class="fixed inset-0 bg-blue-600 z-[200] flex flex-col items-center justify-center">
         <div class="loader mb-4 border-white border-t-yellow-400"></div>
-        <p class="text-white font-bold animate-pulse tracking-widest">MEMUAT ARENA...</p>
+        <p class="text-white font-bold animate-pulse tracking-widest mb-4">MEMUAT ARENA...</p>
+        <button onclick="forceOffline()" class="text-blue-200 text-sm underline hover:text-white">
+            Lama? Klik untuk Main Offline
+        </button>
     </div>
 
     <!-- MAIN MENU -->
@@ -473,17 +476,22 @@
                 }
             } catch (e) {
                 console.log("Running in Offline/Local Mode");
-                auth = mockAuth;
-                db = mockDB;
-                appId = 'local-app';
-                
-                if (!firebase.firestore) firebase.firestore = {};
-                if (!firebase.firestore.FieldValue) firebase.firestore.FieldValue = {};
-                firebase.firestore.FieldValue.serverTimestamp = () => Date.now();
-                
-                document.getElementById('conn-status').innerText = "OFFLINE MODE (SIMULASI)";
+                forceOffline();
             }
         }
+
+        function forceOffline() {
+            auth = mockAuth;
+            db = mockDB;
+            appId = 'local-app';
+            if (!firebase.firestore) firebase.firestore = {};
+            if (!firebase.firestore.FieldValue) firebase.firestore.FieldValue = {};
+            firebase.firestore.FieldValue.serverTimestamp = () => Date.now();
+            
+            document.getElementById('conn-status').innerText = "OFFLINE MODE (SIMULASI)";
+            initApp();
+        }
+
         initSafe();
 
         let localUser = { uid: null, name: "", avatarIdx: 0 };
@@ -544,7 +552,11 @@
                         updateAvatarPreview();
                     }
                 });
-            } catch (error) { console.error("Auth Error", error); }
+            } catch (error) { 
+                console.error("Auth Error", error);
+                // Force offline if auth fails
+                forceOffline();
+            }
         }
 
         function changeAvatar(d) { SoundManager.click(); let n = localUser.avatarIdx + d; if (n < 0) n = avatars.length - 1; if (n >= avatars.length) n = 0; localUser.avatarIdx = n; updateAvatarPreview(); }
@@ -556,6 +568,8 @@
             if(!validateProfile()) return; 
             SoundManager.click();
             const rid = "BOT-" + Math.floor(1000 + Math.random() * 9000).toString();
+            
+            // Initial State: Pawn 1 at 0, others at -1
             const bots = [
                 { uid: 'bot-1', name: 'Bot Alfa', avatarIdx: (localUser.avatarIdx + 1) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
                 { uid: 'bot-2', name: 'Bot Beta', avatarIdx: (localUser.avatarIdx + 2) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
@@ -919,6 +933,7 @@
             }
             if (!oldPlayerState) oldPlayerState = player;
 
+            // Fallback safety for pawns array
             const startPos = (oldPlayerState && oldPlayerState.pawns && oldPlayerState.pawns[action.pawnIdx] !== undefined) 
                 ? oldPlayerState.pawns[action.pawnIdx] 
                 : -1;
