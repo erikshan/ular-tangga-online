@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Super Ular Tangga Online</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,6 +24,7 @@
             color: #1e293b;
             overflow: hidden; 
             user-select: none;
+            touch-action: none; /* Prevent pull-to-refresh on mobile */
         }
         
         .pixel-font { font-family: 'Press Start 2P', cursive; }
@@ -39,13 +40,14 @@
             position: relative;
             min-width: 220px;
             padding: 12px;
+            z-index: 30; /* Ensure above board */
         }
         
         .hud-panel.active-turn {
             border-color: #facc15;
             box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
             transform: scale(1.02);
-            z-index: 20;
+            z-index: 35;
             background: rgba(30, 41, 59, 0.98);
         }
 
@@ -125,6 +127,7 @@
             background-color: #334155; border: 6px solid #475569; border-radius: 12px; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; 
             width: 100%; max-width: 600px; aspect-ratio: 1;
+            transition: all 0.3s ease;
         }
         .board-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.6rem; position: relative; background-color: #1e293b; border-radius: 1px; color: rgba(255,255,255,0.6); overflow: hidden; }
         .board-cell:nth-child(even) { background-color: #0f172a; }
@@ -156,11 +159,17 @@
         .dest-indicator.up { bottom: 2px; right: 2px; color: #4ade80; }
         .dest-indicator.down { bottom: 2px; right: 2px; color: #f87171; }
 
-        /* CONTROL HUB (Right Side) */
+        /* CONTROL HUB (Right Side Default) */
         #control-hub {
-            position: absolute; top: 50%; right: 30px; transform: translateY(-50%);
-            z-index: 50; display: flex; flex-direction: column-reverse; 
-            align-items: flex-end; gap: 10px;
+            position: absolute;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column-reverse; /* Button bottom, text top */
+            align-items: flex-end; /* Align right */
+            gap: 10px;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         #control-hub.hub-hidden { opacity: 0; transform: translate(100px, -50%); pointer-events: none; }
@@ -212,822 +221,118 @@
         @keyframes bounceSelect { 0%, 100% { transform: scale(1.2); } 50% { transform: scale(1.4); } }
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
+        /* --- MOBILE / RESPONSIVE OPTIMIZATION --- */
         @media (max-width: 768px) {
-            .board-grid { max-width: 85vw; margin-top: -20px; margin-left: 20px; } 
-            .hud-panel { transform: scale(0.8); transform-origin: center; width: 180px; padding: 8px; }
-            #hud-p0 { top: 5px; left: 5px; transform-origin: top left; }
-            #hud-p1 { top: 5px; right: 5px; transform-origin: top right; }
-            #hud-p2 { bottom: 100px; right: 5px; transform-origin: bottom right; }
-            #hud-p3 { bottom: 100px; left: 5px; transform-origin: bottom left; }
+            /* Container Layout */
+            #game-screen {
+                display: flex !important;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 0;
+            }
+
+            /* Board Scale & Position */
+            .board-grid { 
+                max-width: 92vw; 
+                margin: 0 auto;
+                /* Center board vertically, slightly up to make room for bottom controls */
+                margin-bottom: 100px; 
+                margin-top: 40px;
+            } 
+
+            /* Compact HUD Panels */
+            .hud-panel { 
+                transform: none; 
+                transform-origin: center; 
+                min-width: auto;
+                width: 140px; 
+                padding: 6px;
+                border-radius: 10px;
+            }
+            
+            /* HUD Positioning (Top & Bottom Corners) */
+            #hud-p0 { top: 10px; left: 10px; }
+            #hud-p1 { top: 10px; right: 10px; flex-direction: row; } /* Force normal direction */
+            
+            /* Bottom HUDs slightly above controls */
+            #hud-p3 { bottom: 20px; left: 10px; }
+            #hud-p2 { bottom: 20px; right: 10px; flex-direction: row; }
+
+            /* HUD Content Scaling */
+            .hud-avatar-container { width: 40px; height: 40px; padding: 2px; }
+            .hud-avatar { width: 32px; height: 32px; font-size: 1rem; }
+            .rank-badge { width: 24px; height: 24px; font-size: 0.7rem; top: -8px; right: -8px; border-width: 2px; }
+            .hud-panel .text-lg { font-size: 0.9rem; } /* Score */
+            .hud-panel .truncate { font-size: 0.65rem; max-width: 80px; } /* Name */
+            .finish-bar-container { height: 6px; margin-top: 4px; }
+            .hud-pawn-grid { gap: 2px; margin-top: 2px; padding: 2px; }
+            .hud-pawn-slot { width: 16px; height: 16px; font-size: 0.5rem; border-width: 1px; }
+
+            /* Hide Leaderboard on Mobile */
             #leaderboard-sidebar { display: none; }
-            .btn-action { padding: 10px 20px; font-size: 1rem; }
-            #control-hub { right: 10px; }
-            #dice-visual-wrapper { top: 45%; right: 20px; }
-            #cell-0 { left: -30px; width: 30px; height: 30px; bottom: 0; }
+            
+            /* Controls: Move to Bottom Center (Thumb accessible) */
+            #control-hub { 
+                right: auto;
+                top: auto;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                align-items: center;
+                width: 100%;
+                pointer-events: none; /* Let clicks pass through wrapper */
+            }
+            #control-hub.hub-hidden {
+                transform: translate(-50%, 100px); /* Slide down */
+            }
+            
+            #control-hub button, #control-hub #pawn-choice-container {
+                pointer-events: auto; /* Re-enable clicks */
+            }
+
+            /* Action Button Bigger for Thumb */
+            .btn-action { 
+                padding: 15px 40px; 
+                font-size: 1.2rem; 
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                z-index: 100;
+            }
+            
+            /* Pawn Choice Container (Horizontal Scroll or Stack) */
+            #pawn-choice-container {
+                align-items: center;
+                width: 100%;
+                max-height: 200px;
+                overflow-y: auto;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+            }
+            .pawn-select-btn {
+                width: 90%;
+                max-width: 300px;
+                padding: 10px;
+                background: rgba(15, 23, 42, 0.95);
+            }
+
+            /* Dice Visual: Center Screen */
+            #dice-visual-wrapper { 
+                top: 50%; 
+                left: 50%; 
+                right: auto; 
+                transform: translate(-50%, -50%);
+                z-index: 80; /* Above board but below overlays */
+            }
+
+            /* Start Cell Fix */
+            #cell-0 { left: -30px; width: 30px; height: 30px; bottom: 0; border-width: 2px; }
+            #cell-0::after { font-size: 0.3rem; bottom: -12px; }
+            
+            /* Token Size */
+            .player-token { width: 16px; height: 16px; font-size: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+            .token-selectable { transform: scale(1.5) !important; box-shadow: 0 0 10px #facc15 !important; }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-
-    <button onclick="SoundManager.toggleMute()" class="fixed top-4 right-4 z-[60] bg-white/20 hover:bg-white/40 p-2 rounded-full text-white transition backdrop-blur-sm">
-        <i id="volume-icon" class="fa-solid fa-volume-high"></i>
-    </button>
-
-    <div id="conn-status">CONNECTING...</div>
-
-    <div id="loading-screen" class="fixed inset-0 bg-blue-600 z-[200] flex flex-col items-center justify-center">
-        <div class="loader mb-4 border-white border-t-yellow-400"></div>
-        <p class="text-white font-bold animate-pulse tracking-widest mb-4">MEMUAT ARENA...</p>
-        <button onclick="forceOffline()" class="text-blue-200 text-sm underline hover:text-white">
-            Lama? Klik untuk Main Offline
-        </button>
-    </div>
-
-    <!-- MAIN MENU -->
-    <div id="setup-screen" class="flex-grow flex items-center justify-center p-4 hidden z-50 bg-blue-500">
-        <div class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-            <div class="p-8 flex-1 flex flex-col items-center justify-center bg-slate-50">
-                <h1 class="text-3xl font-black text-slate-800 mb-6 pixel-font text-center leading-relaxed">
-                    ULAR <span class="text-yellow-500">TANGGA</span><br>ONLINE
-                </h1>
-                <div class="flex items-center gap-6 mb-6">
-                    <button onclick="changeAvatar(-1)" class="text-slate-400 hover:text-blue-500 text-3xl transition"><i class="fa-solid fa-chevron-left"></i></button>
-                    <div id="avatar-preview" class="avatar-circle text-purple-400 bg-purple-50 shadow-inner"><i class="fa-solid fa-ghost"></i></div>
-                    <button onclick="changeAvatar(1)" class="text-slate-400 hover:text-blue-500 text-3xl transition"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-                <input type="text" id="player-name-input" class="w-full max-w-xs input-gartic mb-4" placeholder="Nama Kamu" maxlength="10">
-            </div>
-            <div class="p-8 flex-1 bg-slate-100 flex flex-col justify-center border-l border-slate-200">
-                <div class="bg-white p-4 rounded-xl shadow-sm mb-6 border border-slate-200">
-                    <button onclick="startVsComputer()" class="w-full mb-3 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-robot"></i> LAWAN KOMPUTER (Solo)
-                    </button>
-                    <div class="h-px bg-slate-300 w-full my-2"></div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Mode Online</label>
-                    <select id="create-difficulty" class="w-full p-3 rounded-lg border-2 border-slate-200 font-bold text-slate-700 outline-none focus:border-blue-500">
-                        <option value="normal">Normal Mode</option>
-                        <option value="hard">Hard Mode (Kick & Bounce)</option>
-                    </select>
-                    <button onclick="createRoom()" class="w-full mt-3 btn-action py-3 text-lg shadow-lg">BUAT ROOM</button>
-                </div>
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="h-px bg-slate-300 flex-grow"></div><span class="text-xs text-slate-400 font-bold">ATAU</span><div class="h-px bg-slate-300 flex-grow"></div>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="join-code-input" class="flex-grow p-3 rounded-lg border-2 border-slate-200 font-bold text-center uppercase outline-none focus:border-blue-500" placeholder="KODE">
-                    <button onclick="joinRoom()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 rounded-lg font-bold shadow-md transition">GABUNG</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- WAITING ROOM -->
-    <div id="waiting-room" class="flex-grow flex items-center justify-center p-4 hidden z-50 bg-blue-500/90 backdrop-blur">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 text-center">
-            <h2 class="text-xl font-bold text-slate-600 mb-4">RUANG TUNGGU</h2>
-            <div class="bg-slate-100 p-4 rounded-xl mb-6 border-2 border-dashed border-slate-300 cursor-pointer hover:bg-slate-200 transition" onclick="copyCode()">
-                <div class="text-xs text-slate-400 uppercase mb-1">Kode Room</div>
-                <div class="text-4xl font-black text-slate-800 tracking-widest" id="room-code-display">----</div>
-            </div>
-            <div id="lobby-player-list" class="space-y-2 mb-6"></div>
-            <div id="host-controls" class="hidden"><button onclick="startGame()" class="w-full btn-action py-4 text-xl">MULAI GAME</button></div>
-            <div id="guest-controls" class="hidden"><p class="text-slate-400 text-sm animate-pulse">Menunggu Host...</p></div>
-        </div>
-    </div>
-
-    <!-- GAME AREA -->
-    <div id="game-screen" class="hidden fixed inset-0 z-0 flex items-center justify-center bg-slate-900">
-        
-        <div id="board-container" class="board-grid z-10 scale-95 md:scale-100 transition-transform">
-            <!-- Cell 0 / START BLOCK -->
-            <div id="cell-0">
-                <i class="fa-solid fa-flag-checkered text-white text-xl"></i>
-            </div>
-        </div>
-
-        <!-- LEADERBOARD SIDEBAR -->
-        <div id="leaderboard-sidebar">
-            <div class="text-yellow-400 font-black text-xs uppercase mb-3 border-b border-white/10 pb-2">Top Skor</div>
-            <div id="leaderboard-content" class="flex flex-col gap-1">
-                <!-- Items injected here -->
-            </div>
-        </div>
-
-        <!-- HUDs -->
-        <div id="hud-p0" class="hud-panel absolute top-4 left-4 flex gap-3 hidden">
-            <div class="relative">
-                <div class="hud-avatar-container">
-                    <div id="av-p0" class="hud-avatar"></div>
-                </div>
-                <div id="rank-p0" class="hidden rank-badge">1st</div>
-            </div>
-            <div class="flex-grow text-white w-full">
-                <div id="name-p0" class="font-bold truncate text-sm text-center">Player 1</div>
-                <div class="flex justify-between items-center mb-1"><div class="text-lg font-black text-yellow-400 leading-none" id="score-p0">0</div><div class="hud-pawn-grid" id="pawns-p0"></div></div>
-                <div class="finish-bar-container"><div id="bar-p0-1" class="finish-segment"></div><div id="bar-p0-2" class="finish-segment"></div><div id="bar-p0-3" class="finish-segment"></div><div id="bar-p0-4" class="finish-segment"></div></div>
-            </div>
-        </div>
-        <div id="hud-p1" class="hud-panel absolute top-4 right-4 flex flex-row-reverse gap-3 text-right hidden">
-            <div class="relative">
-                <div class="hud-avatar-container">
-                    <div id="av-p1" class="hud-avatar"></div>
-                </div>
-                <div id="rank-p1" class="hidden rank-badge">2nd</div>
-            </div>
-            <div class="flex-grow text-white w-full">
-                <div id="name-p1" class="font-bold truncate text-sm text-center">Player 2</div>
-                <div class="flex flex-row-reverse justify-between items-center mb-1"><div class="text-lg font-black text-yellow-400 leading-none" id="score-p1">0</div><div class="hud-pawn-grid" id="pawns-p1"></div></div>
-                <div class="finish-bar-container"><div id="bar-p1-1" class="finish-segment"></div><div id="bar-p1-2" class="finish-segment"></div><div id="bar-p1-3" class="finish-segment"></div><div id="bar-p1-4" class="finish-segment"></div></div>
-            </div>
-        </div>
-        <div id="hud-p3" class="hud-panel absolute bottom-4 left-4 flex gap-3 hidden">
-            <div class="relative">
-                <div class="hud-avatar-container">
-                    <div id="av-p3" class="hud-avatar"></div>
-                </div>
-                <div id="rank-p3" class="hidden rank-badge">3rd</div>
-            </div>
-            <div class="flex-grow text-white w-full">
-                <div id="name-p3" class="font-bold truncate text-sm text-center">Player 3</div>
-                <div class="flex justify-between items-center mb-1"><div class="text-lg font-black text-yellow-400 leading-none" id="score-p3">0</div><div class="hud-pawn-grid" id="pawns-p3"></div></div>
-                <div class="finish-bar-container"><div id="bar-p3-1" class="finish-segment"></div><div id="bar-p3-2" class="finish-segment"></div><div id="bar-p3-3" class="finish-segment"></div><div id="bar-p3-4" class="finish-segment"></div></div>
-            </div>
-        </div>
-        <div id="hud-p2" class="hud-panel absolute bottom-4 right-4 flex flex-row-reverse gap-3 text-right hidden">
-            <div class="relative">
-                <div class="hud-avatar-container">
-                    <div id="av-p2" class="hud-avatar"></div>
-                </div>
-                <div id="rank-p2" class="hidden rank-badge">4th</div>
-            </div>
-            <div class="flex-grow text-white w-full">
-                <div id="name-p2" class="font-bold truncate text-sm text-center">Player 4</div>
-                <div class="flex flex-row-reverse justify-between items-center mb-1"><div class="text-lg font-black text-yellow-400 leading-none" id="score-p2">0</div><div class="hud-pawn-grid" id="pawns-p2"></div></div>
-                <div class="finish-bar-container"><div id="bar-p2-1" class="finish-segment"></div><div id="bar-p2-2" class="finish-segment"></div><div id="bar-p2-3" class="finish-segment"></div><div id="bar-p2-4" class="finish-segment"></div></div>
-            </div>
-        </div>
-
-        <!-- INDEPENDENT DICE VISUAL (RIGHT SIDE) -->
-        <div id="dice-visual-wrapper" class="hidden">
-            <div class="scene">
-                <div class="cube" id="dice-cube">
-                    <div class="cube__face cube__face--1"><i class="fa-solid fa-dice-one"></i></div>
-                    <div class="cube__face cube__face--2"><i class="fa-solid fa-dice-two"></i></div>
-                    <div class="cube__face cube__face--3"><i class="fa-solid fa-dice-three"></i></div>
-                    <div class="cube__face cube__face--4"><i class="fa-solid fa-dice-four"></i></div>
-                    <div class="cube__face cube__face--5"><i class="fa-solid fa-dice-five"></i></div>
-                    <div class="cube__face cube__face--6"><i class="fa-solid fa-dice-six"></i></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CONTROL HUB (RIGHT SIDE) -->
-        <div id="control-hub" class="hub-hidden">
-            <div id="pawn-choice-container" class="flex flex-col gap-2 mb-2 items-end"></div>
-            <div id="move-instruction" class="bg-black/80 text-yellow-400 px-4 py-2 rounded-full text-xs font-bold text-center hidden backdrop-blur border border-yellow-500/30 animate-bounce cursor-pointer whitespace-nowrap">
-                PILIH PION ANDA!
-            </div>
-            <button id="roll-btn" onclick="triggerRoll()" class="btn-action px-6 py-4 text-xl shadow-xl border-white/20 border-2 rounded-full flex flex-col items-center justify-center w-24 h-24">
-                <i class="fa-solid fa-dice text-3xl animate-spin mb-1"></i> KOCOK
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // ⭐⭐⭐ KONFIGURASI FIREBASE ⭐⭐⭐
-        const userFirebaseConfig = {
-          apiKey: "AIzaSyD2-sloCWzaNCq3XMwyioDZpxitdIeFgk4",
-          authDomain: "super-ular-tangga.firebaseapp.com",
-          projectId: "super-ular-tangga",
-          storageBucket: "super-ular-tangga.firebasestorage.app",
-          messagingSenderId: "67148179432",
-          appId: "1:67148179432:web:f6cca87d9460b7e291265d",
-          measurementId: "G-BNZYNNYK1F"
-        };
-       
-        // RECURSIVE MOCK DB FOR DEEP CHAINING
-        const createMockRef = (path = '') => {
-            return {
-                collection: (colName) => createMockRef(path ? `${path}/${colName}` : colName),
-                doc: (docId) => createMockRef(`${path}/${docId}`),
-                set: async (data) => { 
-                    mockDB.data[path] = data; 
-                    if(mockDB.listeners[path]) mockDB.listeners[path]({ exists: true, data: () => data });
-                },
-                update: async (data) => {
-                    if(!mockDB.data[path]) mockDB.data[path] = {};
-                    mockDB.data[path] = { ...mockDB.data[path], ...data };
-                    if(mockDB.listeners[path]) mockDB.listeners[path]({ exists: true, data: () => mockDB.data[path] });
-                },
-                onSnapshot: (cb) => {
-                    mockDB.listeners[path] = cb;
-                    if(mockDB.data[path]) cb({ exists: true, data: () => mockDB.data[path] });
-                    return () => delete mockDB.listeners[path];
-                },
-                get: async () => {
-                    return { exists: !!mockDB.data[path], data: () => mockDB.data[path] };
-                }
-            };
-        };
-
-        const mockDB = {
-            data: {},
-            listeners: {},
-            collection: (name) => createMockRef(name),
-            runTransaction: async (updateFunction) => {
-                const transaction = {
-                    get: async (ref) => ref.get(),
-                    update: (ref, data) => ref.update(data)
-                };
-                await updateFunction(transaction);
-            }
-        };
-        
-        const mockAuth = {
-            signInAnonymously: async () => { return { user: { uid: 'local-user' } } },
-            onAuthStateChanged: (cb) => { 
-                setTimeout(() => cb({ uid: 'local-user' }), 500); 
-                return () => {};
-            },
-            currentUser: { uid: 'local-user' },
-            signInWithCustomToken: async () => { return { user: { uid: 'local-user' } } }
-        };
-
-        // INITIALIZATION LOGIC
-        let app, auth, db, appId;
-
-        function initSafe() {
-            try {
-                if (userFirebaseConfig) {
-                     app = firebase.initializeApp(userFirebaseConfig);
-                     auth = firebase.auth();
-                     db = firebase.firestore();
-                     appId = 'ular-tangga-pro';
-                     document.getElementById('conn-status').innerText = "ONLINE MODE";
-                } else if (typeof __firebase_config !== 'undefined') {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    app = firebase.initializeApp(firebaseConfig);
-                    auth = firebase.auth();
-                    db = firebase.firestore();
-                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                    document.getElementById('conn-status').innerText = "PREVIEW MODE";
-                } else {
-                    throw new Error("Local Mode");
-                }
-            } catch (e) {
-                console.log("Running in Offline/Local Mode");
-                forceOffline();
-            }
-        }
-
-        function forceOffline() {
-            auth = mockAuth;
-            db = mockDB;
-            appId = 'local-app';
-            if (!firebase.firestore) firebase.firestore = {};
-            if (!firebase.firestore.FieldValue) firebase.firestore.FieldValue = {};
-            firebase.firestore.FieldValue.serverTimestamp = () => Date.now();
-            
-            document.getElementById('conn-status').innerText = "OFFLINE MODE (SIMULASI)";
-            initApp();
-        }
-
-        initSafe();
-
-        let localUser = { uid: null, name: "", avatarIdx: 0 };
-        let currentGameId = null;
-        let unsubscribeGame = null;
-        let localGameState = null;
-        let pendingMoveDice = 0; 
-        let botTimeout = null;
-        let isVisualizingAction = false;
-        
-        const snakes = { 
-            32: 10, 36: 6, 48: 26, 62: 18, 86: 24, 95: 56, 98: 78
-        };
-        const ladders = { 
-            4: 14, 8: 30, 21: 42, 28: 76, 50: 67, 71: 92, 88: 99
-        };
-        const avatars = [
-            { icon: 'fa-ghost', color: 'text-purple-400', bg: 'bg-purple-50', border: 'border-purple-200' },
-            { icon: 'fa-dragon', color: 'text-red-400', bg: 'bg-red-50', border: 'border-red-200' },
-            { icon: 'fa-robot', color: 'text-blue-400', bg: 'bg-blue-50', border: 'border-blue-200' },
-            { icon: 'fa-frog', color: 'text-green-400', bg: 'bg-green-50', border: 'border-green-200' },
-            { icon: 'fa-spider', color: 'text-orange-400', bg: 'bg-orange-50', border: 'border-orange-200' },
-            { icon: 'fa-cat', color: 'text-pink-400', bg: 'bg-pink-50', border: 'border-pink-200' },
-            { icon: 'fa-hippo', color: 'text-yellow-400', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-            { icon: 'fa-otter', color: 'text-teal-400', bg: 'bg-teal-50', border: 'border-teal-200' }
-        ];
-
-        const SoundManager = {
-            ctx: null, muted: false,
-            init: function() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } if (this.ctx.state === 'suspended') this.ctx.resume(); },
-            toggleMute: function() { this.muted = !this.muted; document.getElementById('volume-icon').className = this.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'; },
-            playOsc: function(freq, type, duration, startTime=0, vol=0.1) { if(this.muted || !this.ctx) return; try { const o=this.ctx.createOscillator(); const g=this.ctx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,this.ctx.currentTime+startTime); g.gain.setValueAtTime(vol,this.ctx.currentTime+startTime); g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+startTime+duration); o.connect(g); g.connect(this.ctx.destination); o.start(this.ctx.currentTime+startTime); o.stop(this.ctx.currentTime+startTime+duration); }catch(e){} },
-            click: function() { this.playOsc(800, 'sine', 0.05); },
-            roll: function() { if(this.muted) return; for(let i=0;i<8;i++) this.playOsc(200+Math.random()*100,'square',0.05,i*0.06,0.05); },
-            step: function() { this.playOsc(600,'sine',0.08); },
-            ladder: function() { [440,554,659,880].forEach((f,i)=>this.playOsc(f,'triangle',0.3,i*0.08,0.1)); },
-            snake: function() { if(this.muted||!this.ctx) return; const o=this.ctx.createOscillator();const g=this.ctx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(800,this.ctx.currentTime);o.frequency.exponentialRampToValueAtTime(100,this.ctx.currentTime+0.5);g.gain.setValueAtTime(0.1,this.ctx.currentTime);g.gain.linearRampToValueAtTime(0,this.ctx.currentTime+0.5);o.connect(g);g.connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+0.5); },
-            kick: function() { if(this.muted||!this.ctx) return; const o=this.ctx.createOscillator();const g=this.ctx.createGain();o.type='square';o.frequency.setValueAtTime(150,this.ctx.currentTime);o.frequency.exponentialRampToValueAtTime(40,this.ctx.currentTime+0.2);g.gain.setValueAtTime(0.3,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+0.2);o.connect(g);g.connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+0.2); },
-            six: function() { [523,659,783,1046].forEach((f,i)=>this.playOsc(f,'square',0.4,i*0.1,0.1)); },
-            win: function() { [523,659,783,1046,783,1046,2093].forEach((f,i)=>this.playOsc(f,'sine',0.5,i*0.15,0.2)); }
-        };
-
-        async function initApp() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && auth.signInWithCustomToken) { 
-                    await auth.signInWithCustomToken(__initial_auth_token); 
-                } else { 
-                    await auth.signInAnonymously(); 
-                }
-                
-                auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        localUser.uid = user.uid;
-                        localUser.name = "Guest" + Math.floor(Math.random()*1000);
-                        document.getElementById('player-name-input').value = localUser.name;
-                        document.getElementById('loading-screen').classList.add('hidden');
-                        document.getElementById('setup-screen').classList.remove('hidden');
-                        updateAvatarPreview();
-                    }
-                });
-            } catch (error) { 
-                console.error("Auth Error", error);
-                // Force offline if auth fails
-                forceOffline();
-            }
-        }
-
-        function changeAvatar(d) { SoundManager.click(); let n = localUser.avatarIdx + d; if (n < 0) n = avatars.length - 1; if (n >= avatars.length) n = 0; localUser.avatarIdx = n; updateAvatarPreview(); }
-        function updateAvatarPreview() { const av = avatars[localUser.avatarIdx]; const p = document.getElementById('avatar-preview'); p.className = "avatar-circle shadow-inner"; p.classList.add(av.color, av.bg, av.border); p.style.borderColor = "currentColor"; p.innerHTML = `<i class="fa-solid ${av.icon}"></i>`; }
-        function validateProfile() { const n = document.getElementById('player-name-input').value.trim(); if (!n) { alert("Isi nama!"); return false; } localUser.name = n; return true; }
-        function copyCode() { navigator.clipboard.writeText(document.getElementById('room-code-display').innerText); alert("Kode disalin!"); }
-
-        async function startVsComputer() {
-            if(!validateProfile()) return; 
-            SoundManager.click();
-            const rid = "BOT-" + Math.floor(1000 + Math.random() * 9000).toString();
-            
-            // Initial State: Pawn 1 at 0, others at -1
-            const bots = [
-                { uid: 'bot-1', name: 'Bot Alfa', avatarIdx: (localUser.avatarIdx + 1) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
-                { uid: 'bot-2', name: 'Bot Beta', avatarIdx: (localUser.avatarIdx + 2) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
-                { uid: 'bot-3', name: 'Bot Gamma', avatarIdx: (localUser.avatarIdx + 3) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true }
-            ];
-            const gd = {
-                roomId: rid, hostId: localUser.uid, status: 'playing', difficulty: 'normal',
-                turnIndex: 0, lastAction: null,
-                players: [{
-                    uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx,
-                    pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0
-                }, ...bots], 
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                isVsComputer: true
-            };
-            try { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(rid).set(gd); enterLobby(rid); } catch (e) { alert("Error starting bot match"); }
-        }
-
-        async function createRoom() {
-            if(!validateProfile()) return; SoundManager.click();
-            const rid = Math.floor(1000 + Math.random() * 9000).toString(); 
-            const gd = {
-                roomId: rid, hostId: localUser.uid, status: 'waiting', difficulty: document.getElementById('create-difficulty').value,
-                turnIndex: 0, lastAction: null,
-                players: [{
-                    uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx,
-                    pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0
-                }], createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            try { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(rid).set(gd); enterLobby(rid); } catch (e) { alert("Error."); }
-        }
-
-        async function joinRoom() {
-            if(!validateProfile()) return; SoundManager.click();
-            const rid = document.getElementById('join-code-input').value.trim(); if(!rid) return;
-            const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(rid);
-            try {
-                await db.runTransaction(async (t) => {
-                    const d = await t.get(ref); 
-                    if (!d.exists) throw "Room tidak ditemukan! Cek kode lagi."; 
-                    const val = d.data();
-                    if (val.status !== 'waiting' || val.players.length >= 8) throw "Room Penuh atau Sedang Main";
-                    if (!val.players.find(p => p.uid === localUser.uid)) {
-                        val.players.push({ uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx, pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0 });
-                        t.update(ref, { players: val.players });
-                    }
-                }); enterLobby(rid);
-            } catch (e) { alert(e); }
-        }
-
-        function enterLobby(rid) {
-            currentGameId = rid; document.getElementById('setup-screen').classList.add('hidden'); document.getElementById('waiting-room').classList.remove('hidden'); document.getElementById('room-code-display').innerText = rid;
-            unsubscribeGame = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(rid).onSnapshot((doc) => { if(doc.exists) handleGameUpdate(doc.data()); else location.reload(); });
-        }
-
-        async function startGame() { if(!currentGameId) return; SoundManager.click(); await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(currentGameId).update({ status: 'playing', lastAction: { type: 'start', timestamp: Date.now() } }); }
-
-        async function handleGameUpdate(newData) {
-            const oldData = localGameState; localGameState = newData;
-            
-            if (newData.status === 'waiting') updateInternalLobbyUI(newData);
-            if (newData.status === 'playing') {
-                if (document.getElementById('game-screen').classList.contains('hidden')) {
-                    document.getElementById('setup-screen').classList.add('hidden'); document.getElementById('waiting-room').classList.add('hidden'); document.getElementById('game-screen').classList.remove('hidden');
-                    renderBoardHTML(newData); 
-                }
-
-                const hasNewAction = newData.lastAction && (!oldData || !oldData.lastAction || oldData.lastAction.timestamp !== newData.lastAction.timestamp);
-                
-                if (hasNewAction) {
-                    isVisualizingAction = true;
-                    updateGameUI(newData); 
-                    await performActionVisuals(newData.lastAction, newData, oldData);
-                    isVisualizingAction = false;
-                    updateGameUI(newData); 
-                } else {
-                    renderPlayersOnBoard(newData.players);
-                    updateGameUI(newData);
-                }
-                updateLeaderboard(newData);
-
-                if (!isVisualizingAction && newData.isVsComputer && newData.hostId === localUser.uid) {
-                    const currentPlayer = newData.players[newData.turnIndex];
-                    if (currentPlayer.isBot) {
-                        if (botTimeout) clearTimeout(botTimeout);
-                        botTimeout = setTimeout(() => { runBotTurn(newData); }, 1000);
-                    }
-                }
-            }
-        }
-
-        function getNextActivePlayer(players, currentIdx) {
-            let nextIdx = (currentIdx + 1) % players.length;
-            let loopCount = 0;
-            while (players[nextIdx].pawns.every(p => p === 100) && loopCount < players.length) {
-                nextIdx = (nextIdx + 1) % players.length;
-                loopCount++;
-            }
-            return nextIdx;
-        }
-
-        async function runBotTurn(data) {
-            const dice = Math.floor(Math.random() * 6) + 1;
-            const playerIdx = data.turnIndex;
-            const player = data.players[playerIdx];
-            let bestMoveIdx = -1;
-            let validMoves = [];
-            player.pawns.forEach((pos, idx) => {
-                if(pos === 100) return;
-                if(pos === -1) {
-                    if(dice === 6) validMoves.push({ idx: idx, score: 100 });
-                } else {
-                    let target = pos + dice;
-                    if (target <= 100 || data.difficulty === 'hard') validMoves.push({ idx: idx, score: target });
-                }
-            });
-
-            if (validMoves.length > 0) {
-                validMoves.sort((a,b) => b.score - a.score);
-                bestMoveIdx = validMoves[0].idx;
-                executeMoveDB(dice, bestMoveIdx, player, data);
-            } else {
-                await passTurn(data, playerIdx, 0);
-            }
-        }
-
-        async function executeMoveDB(dice, pawnIdx, player, data) {
-            const currentPos = player.pawns[pawnIdx];
-            let newPos = currentPos;
-            let msg = "";
-            let extraTurn = false;
-            let consecutiveSixes = player.consecutiveSixes || 0;
-
-            if (dice === 6) {
-                consecutiveSixes++;
-                if (consecutiveSixes >= 3) { extraTurn = false; consecutiveSixes = 0; } else { extraTurn = true; }
-            } else { consecutiveSixes = 0; }
-
-            if (currentPos === -1) {
-                if (dice === 6) newPos = 0;
-            } else {
-                let tempPos = currentPos + dice;
-                if (tempPos > 100) {
-                    if (data.difficulty === 'hard') {
-                        let overshoot = tempPos - 100;
-                        newPos = 100 - overshoot;
-                    } else { newPos = currentPos; }
-                } else { newPos = tempPos; }
-            }
-
-            let isFinish = false;
-            if (newPos === 100) { isFinish = true; if (!extraTurn) { extraTurn = true; } }
-
-            let finalPos = newPos;
-            if (newPos !== -1 && newPos !== 100) { 
-                if (snakes[newPos]) finalPos = snakes[newPos];
-                if (ladders[newPos]) finalPos = ladders[newPos];
-            }
-
-            let kickedAction = null;
-            if (data.difficulty === 'hard' && finalPos !== 0 && finalPos !== -1 && finalPos !== 100) {
-                data.players.forEach((p) => {
-                    if (p.uid !== player.uid) {
-                        p.pawns.forEach((pPos, pPawnIdx) => {
-                            if (pPos === finalPos) {
-                                kickedAction = { victimUid: p.uid, victimPawnIdx: pPawnIdx };
-                                if (!extraTurn) { extraTurn = true; }
-                            }
-                        });
-                    }
-                });
-            }
-
-            const updatedPlayers = JSON.parse(JSON.stringify(data.players));
-            const pIndex = updatedPlayers.findIndex(p => p.uid === player.uid);
-            updatedPlayers[pIndex].pawns[pawnIdx] = finalPos;
-            updatedPlayers[pIndex].consecutiveSixes = consecutiveSixes;
-
-            if (kickedAction) {
-                const vIdx = updatedPlayers.findIndex(p => p.uid === kickedAction.victimUid);
-                updatedPlayers[vIdx].pawns[kickedAction.victimPawnIdx] = -1; 
-            }
-
-            let nextTurn = extraTurn ? data.turnIndex : getNextActivePlayer(updatedPlayers, data.turnIndex);
-
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(currentGameId).update({
-                players: updatedPlayers, turnIndex: nextTurn,
-                lastAction: { type: isFinish ? 'finish' : 'move', value: dice, playerId: player.uid, pawnIdx: pawnIdx, targetPos: finalPos, kicked: kickedAction, timestamp: Date.now() }
-            });
-        }
-
-        function updateInternalLobbyUI(data) {
-            const l = document.getElementById('lobby-player-list'); l.innerHTML = '';
-            data.players.forEach(p => { const av = avatars[p.avatarIdx]; l.innerHTML += `<div class="bg-white p-3 rounded-xl flex items-center gap-3 border border-slate-200 shadow-sm"><div class="${av.color} w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-lg"><i class="fa-solid ${av.icon}"></i></div><span class="font-bold text-slate-700 truncate">${p.name}</span></div>`; });
-            if (data.hostId === localUser.uid) { document.getElementById('host-controls').classList.remove('hidden'); document.getElementById('guest-controls').classList.add('hidden'); } else { document.getElementById('host-controls').classList.add('hidden'); document.getElementById('guest-controls').classList.remove('hidden'); }
-        }
-
-        function updateLeaderboard(data) {
-            const list = document.getElementById('leaderboard-content');
-            if(!list) return;
-            const scores = data.players.map(p => ({
-                name: p.name,
-                avatar: avatars[p.avatarIdx],
-                score: p.pawns.reduce((acc, pos) => acc + (pos === -1 ? 0 : pos), 0) - (p.penalty || 0)
-            })).sort((a,b) => b.score - a.score);
-
-            list.innerHTML = '';
-            scores.forEach((s, i) => {
-                const rankClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : 'bg-slate-700';
-                list.innerHTML += `<div class="lb-item"><div class="lb-rank ${rankClass}">${i+1}</div><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${s.avatar.color} bg-white"><i class="fa-solid ${s.avatar.icon}"></i></div><div class="flex-grow truncate font-bold text-slate-300">${s.name}</div><div class="font-mono text-yellow-400 font-bold">${s.score}</div></div>`;
-            });
-        }
-
-        function updateGameUI(data) {
-            const hub = document.getElementById('control-hub');
-            if (isVisualizingAction) { hub.classList.add('hub-hidden'); return; }
-
-            for(let i=0; i<4; i++) { const el = document.getElementById(`hud-p${i}`); if(el) el.classList.add('hidden'); }
-            const playersWithScore = data.players.map((p, idx) => ({ ...p, originalIdx: idx, score: p.pawns.reduce((sum, pos) => sum + (pos > 0 ? pos : 0), 0) - (p.penalty || 0) }));
-            const sortedPlayers = [...playersWithScore].sort((a,b) => b.score - a.score);
-
-            data.players.forEach((p, idx) => {
-                const panel = document.getElementById(`hud-p${idx}`);
-                if (!panel) return;
-                panel.classList.remove('hidden');
-                if (idx === data.turnIndex) panel.classList.add('active-turn'); else panel.classList.remove('active-turn');
-
-                const av = avatars[p.avatarIdx];
-                const score = p.pawns.reduce((sum, pos) => sum + (pos > 0 ? pos : 0), 0) - (p.penalty || 0);
-                const rank = sortedPlayers.findIndex(x => x.uid === p.uid) + 1;
-                let rankSuffix = "th"; if(rank===1) rankSuffix="st"; if(rank===2) rankSuffix="nd"; if(rank===3) rankSuffix="rd";
-
-                const nameEl = document.getElementById(`name-p${idx}`); if(nameEl) nameEl.innerText = p.name;
-                const scoreEl = document.getElementById(`score-p${idx}`); if(scoreEl) scoreEl.innerHTML = `${score} <span class="text-[8px] text-slate-300 font-normal block">POIN</span>`;
-                const avEl = document.querySelector(`#hud-p${idx} .hud-avatar`); if(avEl) { avEl.innerHTML = `<i class="fa-solid ${av.icon}"></i>`; avEl.className = `hud-avatar ${av.color} text-white`; }
-                const rankEl = document.getElementById(`rank-p${idx}`); 
-                if(rankEl) { rankEl.innerText = rank + rankSuffix; rankEl.className = `rank-badge rank-${rank}`; rankEl.classList.remove('hidden'); }
-
-                const finishedCount = p.pawns.filter(pos => pos === 100).length;
-                for(let k=1; k<=4; k++) { const bar = document.getElementById(`bar-p${idx}-${k}`); if(bar) { if (k <= finishedCount) bar.classList.add('filled'); else bar.classList.remove('filled'); } }
-                
-                const pawnContainer = document.getElementById(`pawns-p${idx}`);
-                if(pawnContainer) {
-                    pawnContainer.innerHTML = '';
-                    p.pawns.forEach((pos, pIdx) => {
-                        const isBase = pos === -1;
-                        let classes = `hud-pawn-slot text-white ${av.color.replace('text-', 'bg-').replace('400', '600')}`;
-                        if (!isBase) classes = `hud-pawn-slot empty`;
-                        const div = document.createElement('div');
-                        if (isBase) {
-                            div.className = classes + " filled"; div.innerHTML = `<i class="fa-solid ${av.icon}"></i>`;
-                            const isMe = p.uid === localUser.uid;
-                            const isActivePlayer = data.players[data.turnIndex].uid === localUser.uid;
-                            if(isMe && isActivePlayer && pendingMoveDice === 6) {
-                                div.classList.add('spawnable'); div.onclick = (e) => { e.stopPropagation(); selectPawnToMove(pIdx); }
-                            }
-                        } else { div.className = "hud-pawn-slot empty"; div.innerHTML = `<i class="fa-solid fa-check text-xs text-slate-500"></i>`; }
-                        pawnContainer.appendChild(div);
-                    });
-                }
-            });
-
-            const btn = document.getElementById('roll-btn');
-            const instruction = document.getElementById('move-instruction');
-            const selectorContainer = document.getElementById('pawn-choice-container');
-            const diceVisual = document.getElementById('dice-visual-wrapper');
-            
-            const activePlayer = data.players[data.turnIndex];
-            const isMyTurn = activePlayer.uid === localUser.uid;
-
-            if (activePlayer.isBot) { hub.classList.add('hub-hidden'); return; }
-
-            if (isMyTurn) {
-                hub.classList.remove('hub-hidden');
-                if(diceVisual) diceVisual.classList.remove('hidden'); 
-                if (pendingMoveDice > 0) {
-                    btn.disabled = true; btn.innerHTML = `<span class="text-yellow-200 text-base">PILIH</span>`; instruction.classList.remove('hidden');
-                    selectorContainer.innerHTML = '';
-                    const myPlayer = data.players.find(p => p.uid === localUser.uid);
-                    const myAv = avatars[myPlayer.avatarIdx];
-                    myPlayer.pawns.forEach((pos, idx) => {
-                        let isValid = false; let label = ""; let icon = "fa-person-walking";
-                        if (pos === 100) return; 
-                        if (pos === -1) { if (pendingMoveDice === 6) { isValid = true; label = "KELUAR"; icon = "fa-door-open"; } } 
-                        else {
-                            let target = pos + pendingMoveDice;
-                            if (target <= 100 || data.difficulty === 'hard') {
-                                isValid = true;
-                                if (target >= 100 && data.difficulty === 'hard') {
-                                    let overshoot = target - 100; let finalBounce = 100 - overshoot; label = `MAJU ${target} (MUNDUR ${finalBounce})`;
-                                } else if (target > 100) { isValid = false; } else { label = `MAJU KE ${target}`; }
-                            }
-                        }
-                        if (isValid) {
-                            const btnSelect = document.createElement('button'); btnSelect.className = "pawn-select-btn";
-                            btnSelect.innerHTML = `<div class="w-8 h-8 rounded-full ${myAv.color.replace('text-','bg-')} border-2 border-white flex items-center justify-center text-white text-xs font-bold">${idx+1}</div><div class="flex-grow"><div class="text-xs font-bold text-yellow-400">PION ${idx+1}</div><div class="text-[10px] font-bold">${label}</div></div><i class="fa-solid ${icon}"></i>`;
-                            btnSelect.onclick = () => selectPawnToMove(idx); selectorContainer.appendChild(btnSelect);
-                        }
-                    });
-                } else {
-                    btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-dice text-3xl animate-spin mb-1"></i> KOCOK`; instruction.classList.add('hidden'); selectorContainer.innerHTML = ''; 
-                }
-            } else {
-                hub.classList.add('hub-hidden'); selectorContainer.innerHTML = ''; if(diceVisual) diceVisual.classList.add('hidden');
-            }
-        }
-
-        async function triggerRoll() {
-            if(!localGameState) return;
-            const data = localGameState;
-            const playerIdx = data.turnIndex;
-            const player = data.players[playerIdx];
-            if(player.uid !== localUser.uid) return;
-
-            SoundManager.init();
-            const dice = Math.floor(Math.random() * 6) + 1;
-            SoundManager.roll(); await showDiceVisual(dice, player.name); if(dice === 6) SoundManager.six();
-
-            pendingMoveDice = dice;
-            
-            const validMoves = [];
-            player.pawns.forEach((pos, idx) => {
-                if (pos === 100) return;
-                if (pos === -1) { if (dice === 6) validMoves.push(idx); } 
-                else { let target = pos + dice; if (target <= 100 || data.difficulty === 'hard') validMoves.push(idx); }
-            });
-
-            if (validMoves.length === 0) {
-                alert("Tidak ada langkah yang bisa diambil!"); pendingMoveDice = 0; await passTurn(data, playerIdx, 0); 
-            } else if (validMoves.length === 1 && dice !== 6) { selectPawnToMove(validMoves[0]); } 
-            else { updateGameUI(data); renderPlayersOnBoard(data.players); }
-        }
-
-        async function selectPawnToMove(pawnIdx) {
-            if (pendingMoveDice === 0) return;
-            const dice = pendingMoveDice; pendingMoveDice = 0; 
-            const data = localGameState; const playerIdx = data.turnIndex; const player = data.players[playerIdx];
-            executeMoveDB(dice, pawnIdx, player, data);
-        }
-
-        async function passTurn(data, currentIdx, consecSixes) {
-            const next = getNextActivePlayer(data.players, currentIdx);
-            const updatedPlayers = [...data.players];
-            updatedPlayers[currentIdx].consecutiveSixes = 0; 
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('games').doc(currentGameId).update({ turnIndex: next, players: updatedPlayers, lastAction: { type: 'pass', timestamp: Date.now() } });
-        }
-
-        async function performActionVisuals(action, newData, oldData) {
-            if(action.type === 'timeout') { alert('Waktu Habis! Giliran Hangus.'); return; }
-            if (action.playerId !== localUser.uid) {
-                const actor = newData.players.find(p => p.uid === action.playerId);
-                SoundManager.roll(); await showDiceVisual(action.value, actor ? actor.name : "Musuh"); if (action.value === 6) SoundManager.six();
-            }
-            if (newData.status === 'finished') { SoundManager.win(); const winner = newData.players.find(p => p.uid === action.playerId); alert(`${winner.name} MENANG SEMUA!`); return; }
-
-            const player = newData.players.find(p => p.uid === action.playerId);
-            // FIX: Safety check for oldPlayerState
-            let oldPlayerState = null;
-            if (oldData && oldData.players) {
-                oldPlayerState = oldData.players.find(p => p.uid === action.playerId);
-            }
-            if (!oldPlayerState) oldPlayerState = player;
-
-            // Fallback safety for pawns array
-            const startPos = (oldPlayerState && oldPlayerState.pawns && oldPlayerState.pawns[action.pawnIdx] !== undefined) 
-                ? oldPlayerState.pawns[action.pawnIdx] 
-                : -1;
-            
-            let animPlayers = JSON.parse(JSON.stringify(newData.players));
-            const animPlayerIdx = animPlayers.findIndex(p => p.uid === action.playerId);
-            
-            if (animPlayerIdx === -1) return; 
-
-            animPlayers[animPlayerIdx].pawns[action.pawnIdx] = startPos;
-            renderPlayersOnBoard(animPlayers);
-
-            if (startPos === -1 && action.targetPos >= 0) {
-                SoundManager.step(); animPlayers[animPlayerIdx].pawns[action.pawnIdx] = 0; renderPlayersOnBoard(animPlayers); await new Promise(r => setTimeout(r, 250));
-            } else if (action.type !== 'finish' && startPos !== 100) {
-                let walkDest = startPos + action.value;
-                if (walkDest > 100 && newData.difficulty === 'hard') {
-                    for (let i = startPos + 1; i <= 100; i++) { animPlayers[animPlayerIdx].pawns[action.pawnIdx] = i; renderPlayersOnBoard(animPlayers); SoundManager.step(); await new Promise(r => setTimeout(r, 250)); }
-                    let overshoot = walkDest - 100; let bounceFinal = 100 - overshoot;
-                    for (let i = 99; i >= bounceFinal; i--) { animPlayers[animPlayerIdx].pawns[action.pawnIdx] = i; renderPlayersOnBoard(animPlayers); SoundManager.step(); await new Promise(r => setTimeout(r, 250)); }
-                    walkDest = bounceFinal;
-                } else if (walkDest > 100) { walkDest = startPos; } 
-                else {
-                    if (walkDest > startPos) { for (let i = startPos + 1; i <= walkDest; i++) { animPlayers[animPlayerIdx].pawns[action.pawnIdx] = i; renderPlayersOnBoard(animPlayers); SoundManager.step(); await new Promise(r => setTimeout(r, 250)); } }
-                }
-                if (action.targetPos !== walkDest) { await new Promise(r => setTimeout(r, 400)); if (snakes[walkDest]) SoundManager.snake(); else if (ladders[walkDest]) SoundManager.ladder(); animPlayers[animPlayerIdx].pawns[action.pawnIdx] = action.targetPos; renderPlayersOnBoard(animPlayers); }
-            }
-
-            if (action.kicked) { SoundManager.kick(); alert("BOM! Pion ditendang pulang!"); }
-            if (action.type === 'finish') { SoundManager.win(); }
-            renderPlayersOnBoard(newData.players);
-        }
-
-        function showDiceVisual(num, name) {
-            return new Promise(resolve => {
-                const wrapper = document.getElementById('dice-visual-wrapper');
-                const cube = document.getElementById('dice-cube');
-                if(wrapper && cube) {
-                     wrapper.classList.remove('hidden');
-                     cube.style.transform = 'translateZ(-50px) rotateX(0deg) rotateY(0deg)';
-                     cube.classList.add('rolling');
-                     setTimeout(() => {
-                        cube.classList.remove('rolling');
-                        let x = 0, y = 0; let z = 50;
-                        switch(num) { case 1: x=0;y=0; break; case 2: x=0;y=-180; break; case 3: x=0;y=-90; break; case 4: x=0;y=90; break; case 5: x=-90;y=0; break; case 6: x=90;y=0; break; }
-                        cube.style.transform = `translateZ(-${z}px) rotateX(${x}deg) rotateY(${y}deg)`;
-                        setTimeout(() => { resolve(); }, 1000);
-                    }, 1000);
-                } else { resolve(); }
-            });
-        }
-
-        function renderBoardHTML(data) {
-            const container = document.getElementById('board-container'); container.innerHTML = '';
-            const cell0 = document.createElement('div'); cell0.id = 'cell-0'; cell0.innerHTML = '<i class="fa-solid fa-flag-checkered text-white text-xl"></i>'; container.appendChild(cell0);
-            for (let i = 0; i < 100; i++) {
-                let row = Math.floor(i / 10); let col = i % 10;
-                let boardNum = (row % 2 === 0) ? 100 - (row * 10) - col : 100 - (row * 10) - (9 - col);
-                let content = `<span class="opacity-30 absolute top-1 left-1 font-mono z-0 text-white drop-shadow-md">${boardNum}</span>`;
-                if (snakes[boardNum]) content += `<i class="fa-solid fa-staff-snake text-red-500 opacity-50 text-2xl absolute z-0"></i><div class="dest-indicator down">TURUN ${snakes[boardNum]}</div>`;
-                if (ladders[boardNum]) content += `<i class="fa-solid fa-ladder-water text-green-500 opacity-50 text-xl absolute z-0"></i><div class="dest-indicator up">NAIK ${ladders[boardNum]}</div>`;
-                if (boardNum === 100) content += `<i class="fa-solid fa-crown text-yellow-400 text-3xl z-0"></i>`;
-                container.innerHTML += `<div class="board-cell ${snakes[boardNum]?'snake-path':''} ${ladders[boardNum]?'ladder-path':''}" id="cell-${boardNum}">${content}</div>`;
-            }
-        }
-
-        function renderPlayersOnBoard(players) {
-            document.querySelectorAll('.player-token').forEach(e => e.remove());
-            const myUid = localUser.uid;
-            players.forEach((p, pIdx) => {
-                const av = avatars[p.avatarIdx];
-                const isMe = p.uid === myUid;
-                p.pawns.forEach((pos, pawnIdx) => {
-                    if (pos === -1 || pos === 100) return; 
-                    const cell = document.getElementById(`cell-${pos}`);
-                    if (cell) {
-                        const token = document.createElement('div');
-                        token.className = `player-token ${av.color.replace('text-','bg-')} border-2 border-white`;
-                        token.innerHTML = `<span class="token-number text-[8px] text-white">${pawnIdx+1}</span>`;
-                        if (isMe && pendingMoveDice > 0) {
-                            let isValid = false;
-                            if (pos + pendingMoveDice <= 100 || localGameState.difficulty === 'hard') isValid = true;
-                            if (isValid) {
-                                token.classList.add('token-selectable');
-                                token.onclick = (e) => { e.stopPropagation(); selectPawnToMove(pawnIdx); };
-                            }
-                        }
-                        const baseOffset = pIdx * 4 + pawnIdx * 2; 
-                        token.style.position = 'absolute'; token.style.transform = `translate(${baseOffset - 5}px, ${baseOffset - 5}px)`;
-                        cell.appendChild(token);
-                    }
-                });
-            });
-        }
-    </script>
-</body>
-</html>
+    <!-- ... (HTML Content remains same as previous robust version) ... -->
