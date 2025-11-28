@@ -160,7 +160,7 @@
         .dest-indicator.up { bottom: 2px; right: 2px; color: #4ade80; }
         .dest-indicator.down { bottom: 2px; right: 2px; color: #f87171; }
 
-        /* CONTROL HUB */
+        /* CONTROL HUB (Right Side) */
         #control-hub {
             position: absolute; top: 50%; right: 30px; transform: translateY(-50%);
             z-index: 50; display: flex; flex-direction: column-reverse; 
@@ -175,6 +175,19 @@
             width: 100px; height: 100px; pointer-events: none; 
             display: flex; justify-content: center; align-items: center; z-index: 60;
         }
+
+        /* LEADERBOARD SIDEBAR */
+        #leaderboard-sidebar {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 200px;
+            background: rgba(15, 23, 42, 0.95); border: 2px solid #facc15; border-radius: 12px; padding: 15px;
+            z-index: 40; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); transition: all 0.3s;
+        }
+        .lb-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.8rem; }
+        .lb-item:last-child { border-bottom: none; }
+        .lb-rank { width: 24px; height: 24px; background: #334155; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.7rem; }
+        .lb-rank.top-1 { background: #facc15; color: #78350f; }
+        .lb-rank.top-2 { background: #94a3b8; color: #0f172a; }
+        .lb-rank.top-3 { background: #b45309; color: #fffbeb; }
 
         /* Connection Status */
         #conn-status {
@@ -196,7 +209,10 @@
         .cube__face--6  { transform: rotateX(-90deg) translateZ(40px); }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spinDice { 0% { transform: translateZ(-40px) rotateX(0deg) rotateY(0deg) rotateZ(0deg); } 100% { transform: translateZ(-40px) rotateX(360deg) rotateY(360deg) rotateZ(360deg); } }
+        @keyframes spinDice { 
+            0% { transform: translateZ(-40px) rotateX(0deg) rotateY(0deg) rotateZ(0deg); } 
+            100% { transform: translateZ(-40px) rotateX(360deg) rotateY(360deg) rotateZ(360deg); } 
+        }
         @keyframes bounceSelect { 0%, 100% { transform: scale(1.2); } 50% { transform: scale(1.4); } }
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
@@ -207,6 +223,7 @@
             #hud-p1 { top: 5px; right: 5px; transform-origin: top right; }
             #hud-p2 { bottom: 100px; right: 5px; transform-origin: bottom right; }
             #hud-p3 { bottom: 100px; left: 5px; transform-origin: bottom left; }
+            #leaderboard-sidebar { display: none; }
             .btn-action { padding: 10px 20px; font-size: 1rem; }
             #control-hub { right: 10px; }
             #dice-visual-wrapper { top: 45%; right: 20px; }
@@ -292,6 +309,14 @@
             </div>
         </div>
 
+        <!-- LEADERBOARD SIDEBAR -->
+        <div id="leaderboard-sidebar">
+            <div class="text-yellow-400 font-black text-xs uppercase mb-3 border-b border-white/10 pb-2">Top Skor</div>
+            <div id="leaderboard-content" class="flex flex-col gap-1">
+                <!-- Items injected here -->
+            </div>
+        </div>
+
         <!-- HUDs -->
         <div id="hud-p0" class="hud-panel absolute top-4 left-4 flex gap-3 hidden">
             <div class="relative">
@@ -373,7 +398,7 @@
     </div>
 
     <script>
-        // --- CONFIG ---
+        // ⭐⭐⭐ KONFIGURASI FIREBASE ⭐⭐⭐
         const userFirebaseConfig = {
           apiKey: "AIzaSyD2-sloCWzaNCq3XMwyioDZpxitdIeFgk4",
           authDomain: "super-ular-tangga.firebaseapp.com",
@@ -383,13 +408,16 @@
           appId: "1:67148179432:web:f6cca87d9460b7e291265d",
           measurementId: "G-BNZYNNYK1F"
         };
-
-        // --- MOCK DB (OFFLINE) ---
+       
+        // RECURSIVE MOCK DB FOR DEEP CHAINING
         const createMockRef = (path = '') => {
             return {
                 collection: (colName) => createMockRef(path ? `${path}/${colName}` : colName),
                 doc: (docId) => createMockRef(`${path}/${docId}`),
-                set: async (data) => { mockDB.data[path] = data; if(mockDB.listeners[path]) mockDB.listeners[path]({ exists: true, data: () => data }); },
+                set: async (data) => { 
+                    mockDB.data[path] = data; 
+                    if(mockDB.listeners[path]) mockDB.listeners[path]({ exists: true, data: () => data });
+                },
                 update: async (data) => {
                     if(!mockDB.data[path]) mockDB.data[path] = {};
                     mockDB.data[path] = { ...mockDB.data[path], ...data };
@@ -400,23 +428,62 @@
                     if(mockDB.data[path]) cb({ exists: true, data: () => mockDB.data[path] });
                     return () => delete mockDB.listeners[path];
                 },
-                get: async () => { return { exists: !!mockDB.data[path], data: () => mockDB.data[path] }; }
+                get: async () => {
+                    return { exists: !!mockDB.data[path], data: () => mockDB.data[path] };
+                }
             };
         };
+
         const mockDB = {
-            data: {}, listeners: {}, collection: (name) => createMockRef(name),
-            runTransaction: async (updateFunction) => { await updateFunction({ get: async (ref) => ref.get(), update: (ref, data) => ref.update(data) }); }
+            data: {},
+            listeners: {},
+            collection: (name) => createMockRef(name),
+            runTransaction: async (updateFunction) => {
+                const transaction = {
+                    get: async (ref) => ref.get(),
+                    update: (ref, data) => ref.update(data)
+                };
+                await updateFunction(transaction);
+            }
         };
+        
         const mockAuth = {
             signInAnonymously: async () => { return { user: { uid: 'local-user' } } },
-            onAuthStateChanged: (cb) => { setTimeout(() => cb({ uid: 'local-user' }), 500); return () => {}; },
+            onAuthStateChanged: (cb) => { 
+                setTimeout(() => cb({ uid: 'local-user' }), 500); 
+                return () => {};
+            },
             currentUser: { uid: 'local-user' },
             signInWithCustomToken: async () => { return { user: { uid: 'local-user' } } }
         };
 
-        // --- INITIALIZATION ---
+        // INITIALIZATION LOGIC
         let app, auth, db, appId;
-        let isOffline = false;
+
+        function initSafe() {
+            try {
+                // Priority 1: User Config (Manual Edit)
+                if (userFirebaseConfig) {
+                     app = firebase.initializeApp(userFirebaseConfig);
+                     auth = firebase.auth();
+                     db = firebase.firestore();
+                     appId = 'ular-tangga-pro';
+                     document.getElementById('conn-status').innerText = "ONLINE MODE";
+                } else if (typeof __firebase_config !== 'undefined') {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    app = firebase.initializeApp(firebaseConfig);
+                    auth = firebase.auth();
+                    db = firebase.firestore();
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    document.getElementById('conn-status').innerText = "PREVIEW MODE";
+                } else {
+                    throw new Error("Local Mode");
+                }
+            } catch (e) {
+                console.log("Running in Offline/Local Mode");
+                forceOffline();
+            }
+        }
 
         function forceOffline() {
             console.log("Switching to Offline Mode...");
@@ -424,6 +491,7 @@
             auth = mockAuth;
             db = mockDB;
             appId = 'local-app';
+            
             if (!firebase.firestore) firebase.firestore = {};
             if (!firebase.firestore.FieldValue) firebase.firestore.FieldValue = {};
             firebase.firestore.FieldValue.serverTimestamp = () => Date.now();
@@ -436,29 +504,6 @@
             initApp(); 
         }
 
-        function initSafe() {
-            try {
-                // Try Online First
-                app = firebase.initializeApp(userFirebaseConfig);
-                auth = firebase.auth();
-                db = firebase.firestore();
-                appId = 'ular-tangga-pro';
-                document.getElementById('conn-status').innerText = "ONLINE MODE";
-                
-                // Auto-fallback timer: If not loaded in 3s, show button or force
-                setTimeout(() => {
-                     const loader = document.getElementById('loading-screen');
-                     if(loader && !loader.classList.contains('hidden')) {
-                         console.warn("Connection slow, switching to offline fallback suggested.");
-                         // We don't force auto, user clicks button if stuck
-                     }
-                }, 3000);
-
-            } catch (e) {
-                console.log("Init Failed, using Offline");
-                forceOffline();
-            }
-        }
         initSafe();
 
         let localUser = { uid: null, name: "", avatarIdx: 0 };
@@ -469,8 +514,12 @@
         let botTimeout = null;
         let isVisualizingAction = false;
         
-        const snakes = { 32: 10, 36: 6, 48: 26, 62: 18, 86: 24, 95: 56, 98: 78 };
-        const ladders = { 4: 14, 8: 30, 21: 42, 28: 76, 50: 67, 71: 92, 88: 99 };
+        const snakes = { 
+            32: 10, 36: 6, 48: 26, 62: 18, 86: 24, 95: 56, 98: 78
+        };
+        const ladders = { 
+            4: 14, 8: 30, 21: 42, 28: 76, 50: 67, 71: 92, 88: 99
+        };
         const avatars = [
             { icon: 'fa-ghost', color: 'text-purple-400', bg: 'bg-purple-50', border: 'border-purple-200' },
             { icon: 'fa-dragon', color: 'text-red-400', bg: 'bg-red-50', border: 'border-red-200' },
@@ -497,9 +546,27 @@
             win: function() { [523,659,783,1046,783,1046,2093].forEach((f,i)=>this.playOsc(f,'sine',0.5,i*0.15,0.2)); }
         };
 
+        // Force Login & Init if hanging
+        setTimeout(() => {
+            if(document.getElementById('loading-screen') && !document.getElementById('loading-screen').classList.contains('hidden')) {
+                console.log("Forcing Offline Mode...");
+                // Only force if not already logged in
+                if(!localUser.uid) {
+                     auth = mockAuth;
+                     db = mockDB;
+                     initApp();
+                }
+            }
+        }, 3000);
+
         async function initApp() {
             try {
-                // Auth logic
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && auth.signInWithCustomToken) { 
+                    await auth.signInWithCustomToken(__initial_auth_token); 
+                } else { 
+                    await auth.signInAnonymously(); 
+                }
+                
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         localUser.uid = user.uid;
@@ -508,16 +575,9 @@
                         document.getElementById('loading-screen').classList.add('hidden');
                         document.getElementById('setup-screen').classList.remove('hidden');
                         updateAvatarPreview();
-                    } else {
-                        auth.signInAnonymously().catch(e => {
-                            console.log("Online auth failed, switching offline");
-                            forceOffline();
-                        });
                     }
                 });
-            } catch (error) { 
-                forceOffline();
-            }
+            } catch (error) { console.error("Auth Error", error); }
         }
 
         function changeAvatar(d) { SoundManager.click(); let n = localUser.avatarIdx + d; if (n < 0) n = avatars.length - 1; if (n >= avatars.length) n = 0; localUser.avatarIdx = n; updateAvatarPreview(); }
@@ -529,17 +589,19 @@
             if(!validateProfile()) return; 
             SoundManager.click();
             const rid = "BOT-" + Math.floor(1000 + Math.random() * 9000).toString();
+            
+            // UPDATED INITIALIZATION: Pawn 1 at 0 (Start), others at -1 (Base)
             const bots = [
-                { uid: 'bot-1', name: 'Bot Alfa', avatarIdx: (localUser.avatarIdx + 1) % 8, pawns: [-1,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
-                { uid: 'bot-2', name: 'Bot Beta', avatarIdx: (localUser.avatarIdx + 2) % 8, pawns: [-1,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
-                { uid: 'bot-3', name: 'Bot Gamma', avatarIdx: (localUser.avatarIdx + 3) % 8, pawns: [-1,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true }
+                { uid: 'bot-1', name: 'Bot Alfa', avatarIdx: (localUser.avatarIdx + 1) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
+                { uid: 'bot-2', name: 'Bot Beta', avatarIdx: (localUser.avatarIdx + 2) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true },
+                { uid: 'bot-3', name: 'Bot Gamma', avatarIdx: (localUser.avatarIdx + 3) % 8, pawns: [0,-1,-1,-1], consecutiveSixes: 0, penalty: 0, isBot: true }
             ];
             const gd = {
                 roomId: rid, hostId: localUser.uid, status: 'playing', difficulty: 'normal',
                 turnIndex: 0, lastAction: null,
                 players: [{
                     uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx,
-                    pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0 // UPDATED: Pawn 1 at 0
+                    pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0
                 }, ...bots], 
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 isVsComputer: true
@@ -570,7 +632,8 @@
                     const d = await t.get(ref); if (!d.exists) throw "404"; const val = d.data();
                     if (val.status !== 'waiting' || val.players.length >= 8) throw "Penuh/Main";
                     if (!val.players.find(p => p.uid === localUser.uid)) {
-                        val.players.push({ uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx, pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0 }); // UPDATED: Pawn 1 at 0
+                        // UPDATED: Pawn 1 at 0
+                        val.players.push({ uid: localUser.uid, name: localUser.name, avatarIdx: localUser.avatarIdx, pawns: [0, -1, -1, -1], consecutiveSixes: 0, penalty: 0 }); 
                         t.update(ref, { players: val.players });
                     }
                 }); enterLobby(rid);
@@ -592,7 +655,6 @@
                 renderBoardHTML(newData); SoundManager.six();
             }
             if (newData.status === 'playing') {
-                // Check for new action animation
                 const hasNewAction = newData.lastAction && (!oldData || !oldData.lastAction || oldData.lastAction.timestamp !== newData.lastAction.timestamp);
                 if (hasNewAction) {
                     isVisualizingAction = true;
@@ -604,7 +666,8 @@
                     renderPlayersOnBoard(newData.players);
                     updateGameUI(newData);
                 }
-                
+                updateLeaderboard(newData);
+
                 if (!isVisualizingAction && newData.isVsComputer && newData.hostId === localUser.uid) {
                     const currentPlayer = newData.players[newData.turnIndex];
                     if (currentPlayer.isBot) {
@@ -719,6 +782,22 @@
             const l = document.getElementById('lobby-player-list'); l.innerHTML = '';
             data.players.forEach(p => { const av = avatars[p.avatarIdx]; l.innerHTML += `<div class="bg-white p-3 rounded-xl flex items-center gap-3 border border-slate-200 shadow-sm"><div class="${av.color} w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-lg"><i class="fa-solid ${av.icon}"></i></div><span class="font-bold text-slate-700 truncate">${p.name}</span></div>`; });
             if (data.hostId === localUser.uid) { document.getElementById('host-controls').classList.remove('hidden'); document.getElementById('guest-controls').classList.add('hidden'); } else { document.getElementById('host-controls').classList.add('hidden'); document.getElementById('guest-controls').classList.remove('hidden'); }
+        }
+
+        function updateLeaderboard(data) {
+            const list = document.getElementById('leaderboard-content');
+            if(!list) return;
+            const scores = data.players.map(p => ({
+                name: p.name,
+                avatar: avatars[p.avatarIdx],
+                score: p.pawns.reduce((acc, pos) => acc + (pos === -1 ? 0 : pos), 0) - (p.penalty || 0)
+            })).sort((a,b) => b.score - a.score);
+
+            list.innerHTML = '';
+            scores.forEach((s, i) => {
+                const rankClass = i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : 'bg-slate-700';
+                list.innerHTML += `<div class="lb-item"><div class="lb-rank ${rankClass}">${i+1}</div><div class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${s.avatar.color} bg-white"><i class="fa-solid ${s.avatar.icon}"></i></div><div class="flex-grow truncate font-bold text-slate-300">${s.name}</div><div class="font-mono text-yellow-400 font-bold">${s.score}</div></div>`;
+            });
         }
 
         function updateGameUI(data) {
@@ -837,12 +916,8 @@
 
             if (validMoves.length === 0) {
                 alert("Tidak ada langkah yang bisa diambil!"); pendingMoveDice = 0; await passTurn(data, playerIdx, 0); 
-            } else if (validMoves.length === 1 && dice !== 6) { 
-                // AUTO MOVE: Only if not 6 and single option.
-                selectPawnToMove(validMoves[0]); 
-            } else { 
-                updateGameUI(data); renderPlayersOnBoard(data.players); 
-            }
+            } else if (validMoves.length === 1 && dice !== 6) { selectPawnToMove(validMoves[0]); } 
+            else { updateGameUI(data); renderPlayersOnBoard(data.players); }
         }
 
         async function selectPawnToMove(pawnIdx) {
@@ -868,17 +943,13 @@
             if (newData.status === 'finished') { SoundManager.win(); const winner = newData.players.find(p => p.uid === action.playerId); alert(`${winner.name} MENANG SEMUA!`); return; }
 
             const player = newData.players.find(p => p.uid === action.playerId);
-            // Safety Check: Fallback if old data missing
+            // Safety check
             let oldPlayerState = null;
-            if (oldData && oldData.players) {
-                oldPlayerState = oldData.players.find(p => p.uid === action.playerId);
-            }
+            if (oldData && oldData.players) oldPlayerState = oldData.players.find(p => p.uid === action.playerId);
             if (!oldPlayerState) oldPlayerState = player;
 
-            // Fallback safety for pawns array
-            const startPos = (oldPlayerState && oldPlayerState.pawns && oldPlayerState.pawns[action.pawnIdx] !== undefined) 
-                ? oldPlayerState.pawns[action.pawnIdx] 
-                : -1;
+            // Use pawnIdx to find specific pawn start pos
+            const startPos = (oldPlayerState && oldPlayerState.pawns) ? oldPlayerState.pawns[action.pawnIdx] : -1;
             
             let animPlayers = JSON.parse(JSON.stringify(newData.players));
             const animPlayerIdx = animPlayers.findIndex(p => p.uid === action.playerId);
